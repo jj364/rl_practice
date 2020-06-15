@@ -6,7 +6,7 @@ import random
 
 WIDTH = 200
 HEIGHT = 200
-TIME = 400
+TIME = 100
 BLOCK_SIZE = 10
 
 
@@ -24,6 +24,8 @@ class Snake:
         self.body_colour = body_colour
         self.direction = 'r'
         self.food = None
+        self.food_rect = None
+        self.score = start_length
 
     def create_snake(self, canvas):
         head_pos = [int(WIDTH/2), int(HEIGHT)/2]
@@ -38,14 +40,20 @@ class Snake:
             self.rect.append(rect)
 
     def gen_food(self, canvas):
-        food = [random.randint(0,WIDTH/BLOCK_SIZE)*BLOCK_SIZE, random.randint(0,HEIGHT/BLOCK_SIZE)*BLOCK_SIZE]
+
+        if self.food_rect is not None:
+            canvas.delete(self.food_rect)
+
+        food = [random.randint(0,WIDTH/BLOCK_SIZE-1)*BLOCK_SIZE, random.randint(0,HEIGHT/BLOCK_SIZE-1)*BLOCK_SIZE]
 
         while food in self.body:
             food = [random.randint(0,WIDTH/BLOCK_SIZE)*BLOCK_SIZE, random.randint(0,HEIGHT/BLOCK_SIZE)*BLOCK_SIZE]
 
         x1 = food[0]; x2 = food[0] + BLOCK_SIZE
         y1 = food[1]; y2 = food[1] + BLOCK_SIZE
-        self.food = canvas.create_rectangle(x1, y1, x2, y2, fill='green')
+
+        self.food = food
+        self.food_rect = canvas.create_rectangle(x1, y1, x2, y2, fill='green')
 
 
     def change_direction(self, direction):
@@ -92,20 +100,27 @@ class Snake:
         if not self.check_head(head_pos):
             print("COLLISION...GAME OVER")
             quit()
+
         x1 = head_pos[0]; x2 = head_pos[0] + BLOCK_SIZE
         y1 = head_pos[1]; y2 = head_pos[1] + BLOCK_SIZE
         rect = canvas.create_rectangle(x1, y1, x2, y2, fill=self.body_colour)
         self.body.appendleft(head_pos)
         self.rect.appendleft(rect)
 
-        root.after(TIME, self.move, canvas)
+        if head_pos == self.food:
+            self.gen_food(canvas)
+            remove_end = False
+        else:
+            remove_end = True
+
+        root.after(TIME, self.move, canvas, remove_end)
 
 
 root = tk.Tk()
 canvas = tk.Canvas(root, height=HEIGHT, width=WIDTH)
 canvas.pack()
 
-snake = Snake(start_length=5)
+snake = Snake(start_length=3)
 snake.create_snake(canvas)
 snake.gen_food(canvas)
 
