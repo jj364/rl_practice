@@ -1,18 +1,36 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
+from tkinter import Canvas
 from collections import deque
 import random
+import time
 
 WIDTH = 200
 HEIGHT = 200
-TIME = 100
+TIME = 200
 BLOCK_SIZE = 10
 
 
-class Board:
-    def __init__(self, master):
-        self.whatevs = None
+class UI:
+    def __init__(self):
+        self.root = tk.Tk()
+
+    def buttons(self):
+        self.root.after(TIME, snake.move, canvas, self.root)
+
+        self.root.bind('<Left>', lambda event: snake.change_direction('l'))
+        self.root.bind('<Right>', lambda event: snake.change_direction('r'))
+        self.root.bind('<Up>', lambda event: snake.change_direction('u'))
+        self.root.bind('<Down>', lambda event: snake.change_direction('d'))
+
+        self.root.mainloop()
+
+
+class Board(Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 
 
 class Snake:
@@ -26,6 +44,7 @@ class Snake:
         self.food = None
         self.food_rect = None
         self.score = start_length
+        self.t0 = time.time()
 
     def create_snake(self, canvas):
         head_pos = [int(WIDTH/2), int(HEIGHT)/2]
@@ -54,7 +73,6 @@ class Snake:
 
         self.food = food
         self.food_rect = canvas.create_rectangle(x1, y1, x2, y2, fill='green')
-
 
     def change_direction(self, direction):
         # Only allow 90 degree turns
@@ -89,7 +107,7 @@ class Snake:
         else:
             return True
 
-    def move(self, canvas, remove_end=True):
+    def move(self, canvas, root, remove_end=True):
         # Move last element to front
         if remove_end:
             toe_to_head = self.rect.pop()
@@ -110,25 +128,23 @@ class Snake:
         if head_pos == self.food:
             self.gen_food(canvas)
             remove_end = False
+
+            # update score
+            self.score = len(self.body)
+            print(self.score)
         else:
             remove_end = True
 
-        root.after(TIME, self.move, canvas, remove_end)
+        # Call move again
+        root.after(TIME, self.move, canvas, root, remove_end)
 
 
-root = tk.Tk()
-canvas = tk.Canvas(root, height=HEIGHT, width=WIDTH)
+ui = UI()
+canvas = Board(ui.root, height=HEIGHT, width=WIDTH)
 canvas.pack()
 
 snake = Snake(start_length=3)
 snake.create_snake(canvas)
 snake.gen_food(canvas)
 
-root.after(TIME, snake.move, canvas)
-
-root.bind('<Left>', lambda event:snake.change_direction('l'))
-root.bind('<Right>', lambda event:snake.change_direction('r'))
-root.bind('<Up>', lambda event:snake.change_direction('u'))
-root.bind('<Down>', lambda event:snake.change_direction('d'))
-
-root.mainloop()
+ui.buttons()
