@@ -8,6 +8,7 @@ import time
 
 WIDTH = 200
 HEIGHT = 200
+BANNER_OFFSET = 12
 TIME = 200
 BLOCK_SIZE = 10
 
@@ -31,7 +32,11 @@ class Board(Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def add_score(self, score):
+        self.live_score = self.create_text(100,10, text=(score), font=("Comic Sans", 10))
 
+    def update_score(self, score):
+        self.itemconfig(self.live_score, text=score)
 
 class Snake:
     def __init__(self, start_length=3, speed=10, body_colour='red'):
@@ -130,8 +135,8 @@ class Snake:
             remove_end = False
 
             # update score
-            self.score = len(self.body)
-            print(self.score)
+            self.score = len(self.body)+1
+            canvas.update_score(self.score)
         else:
             remove_end = True
 
@@ -140,11 +145,13 @@ class Snake:
 
 
 ui = UI()
-canvas = Board(ui.root, height=HEIGHT, width=WIDTH)
+canvas = Board(ui.root, height=HEIGHT+BANNER_OFFSET, width=WIDTH)
 canvas.pack()
 
 snake = Snake(start_length=3)
 snake.create_snake(canvas)
 snake.gen_food(canvas)
+
+canvas.add_score(snake.score)
 
 ui.buttons()
