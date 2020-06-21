@@ -18,7 +18,7 @@ class UI:
         self.root = tk.Tk()
 
     def buttons(self):
-        self.root.after(TIME, snake.move, canvas, self.root)
+        self.root.after(TIME, snake.move, canvas, score_str_var, self.root)
 
         self.root.bind('<Left>', lambda event: snake.change_direction('l'))
         self.root.bind('<Right>', lambda event: snake.change_direction('r'))
@@ -27,16 +27,17 @@ class UI:
 
         self.root.mainloop()
 
+# class Board(Canvas):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#
+# class Banner(tk.Frame)
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.live_score = None
+#
+#     def add_score(self, score):
 
-class Board(Canvas):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def add_score(self, score):
-        self.live_score = self.create_text(100,10, text=(score), font=("Comic Sans", 10))
-
-    def update_score(self, score):
-        self.itemconfig(self.live_score, text=score)
 
 class Snake:
     def __init__(self, start_length=3, speed=10, body_colour='red'):
@@ -48,7 +49,7 @@ class Snake:
         self.direction = 'r'
         self.food = None
         self.food_rect = None
-        self.score = start_length
+        self.score = 0
         self.t0 = time.time()
 
     def create_snake(self, canvas):
@@ -112,7 +113,7 @@ class Snake:
         else:
             return True
 
-    def move(self, canvas, root, remove_end=True):
+    def move(self, canvas, score_str_var, root, remove_end=True):
         # Move last element to front
         if remove_end:
             toe_to_head = self.rect.pop()
@@ -135,23 +136,34 @@ class Snake:
             remove_end = False
 
             # update score
-            self.score = len(self.body)+1
-            canvas.update_score(self.score)
+            self.score += 1
+            score_str_var.set(str(self.score))
         else:
             remove_end = True
 
         # Call move again
-        root.after(TIME, self.move, canvas, root, remove_end)
+        root.after(TIME, self.move, canvas, score_str_var, root, remove_end)
 
 
 ui = UI()
-canvas = Board(ui.root, height=HEIGHT+BANNER_OFFSET, width=WIDTH)
-canvas.pack()
+ui.root.rowconfigure(0, weight=1) # allow header expand vertically
+ui.root.columnconfigure(0, weight=1) # allow both header and footer expand horizontally
+
+header = tk.Frame(master=ui.root, height=30, bg="red")
+header.pack(fill=tk.X)
+
+canvas = Canvas(ui.root, height=HEIGHT+BANNER_OFFSET, width=WIDTH)
+canvas.pack(fill=tk.X)
+
+footer = tk.Frame(master=ui.root, bg='#A5A5A5', height=30)
+footer.pack(fill=tk.X)
+score_str_var = tk.StringVar()
+live_score = tk.Label(ui.root, textvariable=score_str_var)
+live_score.place(relx=1.0, rely=1.0, anchor='se')
+score_str_var.set("0")
 
 snake = Snake(start_length=3)
 snake.create_snake(canvas)
 snake.gen_food(canvas)
-
-canvas.add_score(snake.score)
 
 ui.buttons()
