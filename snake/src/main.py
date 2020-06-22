@@ -8,8 +8,7 @@ import time
 
 WIDTH = 200
 HEIGHT = 200
-BANNER_OFFSET = 12
-TIME = 200
+DIFFICULTY = {"Easy": 400, "Medium": 200, "Hard": 100, "Ridiculous": 50}
 BLOCK_SIZE = 10
 
 
@@ -17,8 +16,8 @@ class UI:
     def __init__(self):
         self.root = tk.Tk()
 
-    def buttons(self):
-        self.root.after(TIME, snake.move, canvas, score_str_var, self.root)
+    def buttons(self, snake, canvas, score_str_var):
+        self.root.after(snake.difficulty, snake.move, canvas, score_str_var, self.root)
 
         self.root.bind('<Left>', lambda event: snake.change_direction('l'))
         self.root.bind('<Right>', lambda event: snake.change_direction('r'))
@@ -27,20 +26,9 @@ class UI:
 
         self.root.mainloop()
 
-# class Board(Canvas):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#
-# class Banner(tk.Frame)
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.live_score = None
-#
-#     def add_score(self, score):
-
 
 class Snake:
-    def __init__(self, start_length=3, speed=10, body_colour='red'):
+    def __init__(self, start_length=3, speed=10, body_colour='red', difficulty='Medium'):
         self.length = start_length
         self.speed = speed
         self.body = deque([])
@@ -51,6 +39,7 @@ class Snake:
         self.food_rect = None
         self.score = 0
         self.t0 = time.time()
+        self.difficulty = DIFFICULTY[difficulty]
 
     def create_snake(self, canvas):
         head_pos = [int(WIDTH/2), int(HEIGHT)/2]
@@ -142,28 +131,33 @@ class Snake:
             remove_end = True
 
         # Call move again
-        root.after(TIME, self.move, canvas, score_str_var, root, remove_end)
+        root.after(self.difficulty, self.move, canvas, score_str_var, root, remove_end)
 
 
-ui = UI()
-ui.root.rowconfigure(0, weight=1) # allow header expand vertically
-ui.root.columnconfigure(0, weight=1) # allow both header and footer expand horizontally
+def setup_game(difficulty):
+    ui = UI()
+    ui.root.rowconfigure(0, weight=1) # allow header expand vertically
+    ui.root.columnconfigure(0, weight=1) # allow both header and footer expand horizontally
 
-header = tk.Frame(master=ui.root, height=30, bg="red")
-header.pack(fill=tk.X)
+    header = tk.Frame(master=ui.root, height=30, bg="red")
+    header.pack(fill=tk.X)
 
-canvas = Canvas(ui.root, height=HEIGHT+BANNER_OFFSET, width=WIDTH)
-canvas.pack(fill=tk.X)
+    canvas = Canvas(ui.root, height=HEIGHT, width=WIDTH, highlightthickness=3, highlightbackground="black")
+    canvas.pack(fill=tk.X)
 
-footer = tk.Frame(master=ui.root, bg='#A5A5A5', height=30)
-footer.pack(fill=tk.X)
-score_str_var = tk.StringVar()
-live_score = tk.Label(ui.root, textvariable=score_str_var)
-live_score.place(relx=1.0, rely=1.0, anchor='se')
-score_str_var.set("0")
+    footer = tk.Frame(master=ui.root, bg='#A5A5A5', height=30)
+    footer.pack(fill=tk.X)
+    score_str_var = tk.StringVar()
+    live_score = tk.Label(ui.root, textvariable=score_str_var)
+    live_score.place(relx=1.0, rely=1.0, anchor='se')
+    score_str_var.set("0")
 
-snake = Snake(start_length=3)
-snake.create_snake(canvas)
-snake.gen_food(canvas)
+    snake = Snake(start_length=3, difficulty=difficulty)
+    snake.create_snake(canvas)
+    snake.gen_food(canvas)
 
-ui.buttons()
+    ui.buttons(snake, canvas, score_str_var)
+
+
+if __name__ == "__main__":
+    setup_game(difficulty="Ridiculous")
