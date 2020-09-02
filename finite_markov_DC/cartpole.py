@@ -5,9 +5,19 @@ At this point it makes more sense to use established environments so I'm loading
 """
 import gym
 
-env = gym.make('CartPole-v0')
+env = gym
 env.reset()
-for _ in range(1000):
+action = env.action_space.sample() # Random action
+for i in range(1000):
     env.render()
-    env.step(env.action_space.sample())  # Take random action
+    observation, reward, done, info = env.step(action)
+
+    if observation[2] > 0:
+        action = 1
+    else:
+        action = 0
+    print(i, reward)
+    if done:
+        break
+
 env.close()
