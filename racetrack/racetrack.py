@@ -77,8 +77,8 @@ class Car:
         # Randomly initialise state-action values
         self.Q = np.random.rand(track.shape[0], track.shape[1], SPEEDS, SPEEDS, len(ACTIONS)) - 100
         self.C = np.zeros((track.shape[0], track.shape[1], SPEEDS, SPEEDS, len(ACTIONS)))  # Weight sum
-        self.e = 0.1  # Epsilon for soft behaviour policy
-        self.gamma = 0.99  # Discount factor
+        self.e = 0.05  # Epsilon for soft behaviour policy
+        self.gamma = 1  # Discount factor
         self.track = track
         self.greedy_action = None
 
@@ -229,15 +229,14 @@ class Car:
 # Instantiate racetrack  object and create the track
 t = Track()
 t.create_track(n_rectangles=5)
-show_track(t.track, t.start, t.finish)
-
+show_track(t.track, t.start, t.finish)  # Show initial track
 
 # Create car object and initialise target policy
 c = Car(t)
 c.create_target_policy()
 for ep in tqdm(range(50000)):  # Train for 50k episodes
 
-    if ep % 5000 == 0 and ep != 0:  # Visualise policy every so often
+    if ep % 30000 == 0 and ep != 0:  # Visualise policy every so often
         print('\n###########################################')
         print('VISUALISING PATHS')
         for i in range(len(c.track.start)):  # Iterate through each possible start position

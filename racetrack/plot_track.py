@@ -35,9 +35,11 @@ def show_track(t, start, finish, trajectory=None):
         else:
             for dx in range(1, vx+1):
                 tx = x + dx
-                ty = x + round(dx*vy/vx)
+                ty = y + round(dx*vy/vx)
                 if (ty, tx) in finish:
                     break
+        if (ty, tx) not in finish:  # Catch error in finish line position
+            (ty, tx) = finish[-1]
         track[ty, tx] = 4
 
     # create discrete colormap
