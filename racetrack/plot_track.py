@@ -3,9 +3,14 @@ from matplotlib import colors, patches
 
 
 def show_track(t, start, finish, trajectory=None):
+    """
+    Plot track including car's trajectory
+    :param t: Binary numpy array where 1 is on track, 0 is off
+    :param start: Start line, list of tuples
+    :param finish: Finish line, list of tuples
+    :param trajectory: [(y,x,vy,vx,action,greedy action), reward] Car's trajectory
+    """
     track = t.copy()
-    print(start)
-    print(finish)
     for s in start:
         track[s[0], s[1]] = 2
 
@@ -13,14 +18,14 @@ def show_track(t, start, finish, trajectory=None):
         if f[1] < track.shape[1]:
             track[f[0], f[1]] = 3
 
+    # Plot entire trajectory
     if trajectory is not None:
         for t in trajectory[::-1]:
             track[t[0][0], t[0][1]] = 4
 
-        print(trajectory[-1])
+        # Plot where trajectory intersects finish line
         [vy, vx] = trajectory[-1][0][2:4]
         [y, x] = trajectory[-1][0][0:2]
-        print(x,y, vx, vy)
         if vy >= vx:
             for dy in range(1, vy+1):
                 ty = y + dy
@@ -33,7 +38,6 @@ def show_track(t, start, finish, trajectory=None):
                 ty = x + round(dx*vy/vx)
                 if (ty, tx) in finish:
                     break
-        print(tx,ty)
         track[ty, tx] = 4
 
     # create discrete colormap
@@ -44,8 +48,10 @@ def show_track(t, start, finish, trajectory=None):
 
     fig, ax = plt.subplots()
     ax.imshow(track, cmap=cmap, norm=norm)
+    # Create legend
     handles = []
     for c in cmap.colors:
         handles.append(patches.Patch(color=c))
     ax.legend(handles=handles, labels=labels)
+
     plt.show()
