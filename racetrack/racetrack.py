@@ -77,8 +77,8 @@ class Car:
         # Randomly initialise state-action values
         self.Q = np.random.rand(track.shape[0], track.shape[1], SPEEDS, SPEEDS, len(ACTIONS)) - 100
         self.C = np.zeros((track.shape[0], track.shape[1], SPEEDS, SPEEDS, len(ACTIONS)))  # Weight sum
-        self.e = 0.05  # Epsilon for soft behaviour policy
-        self.gamma = 1  # Discount factor
+        self.e = 0.1  # Epsilon for soft behaviour policy
+        self.gamma = 0.95  # Discount factor
         self.track = track
         self.greedy_action = None
 
@@ -228,7 +228,7 @@ class Car:
 
 # Instantiate racetrack  object and create the track
 t = Track()
-t.create_track(n_rectangles=5)
+t.create_track(n_rectangles=10)
 show_track(t.track, t.start, t.finish)  # Show initial track
 
 # Create car object and initialise target policy

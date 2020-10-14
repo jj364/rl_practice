@@ -69,7 +69,7 @@ class World:
 
         # Iterate until value function converges
         while True:
-            new_val: ndarray = np.zeros((GRIDSIZE[0], GRIDSIZE[1]))
+            new_val = np.zeros((GRIDSIZE[0], GRIDSIZE[1]))
             # iterate over states
             for r in range(GRIDSIZE[0]):
                 for c in range(GRIDSIZE[1]):
