@@ -7,9 +7,11 @@ from collections import OrderedDict
 
 GRIDSIZE = [7, 10]
 TERMINAL_STATE = np.array([3, 7])  # Location where game terminates
-WIND = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0] # Vertical push by wind in each column
-ACTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1]]
-# Can only move up, down, left, right
+WIND = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]  # Vertical push by wind in each column
+
+# Choose regular or Kingmove Action space
+# ACTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1]]  # Can only move up, down, left, right
+ACTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]]  # Above with king move
 
 
 def step(state, action):
@@ -22,10 +24,13 @@ def step(state, action):
     if np.array_equal(state, TERMINAL_STATE):
         return state, 0.0
 
-    next_state = state + action
+    wind = np.array([-1*WIND[state[1]], 0])  # Add effect of wind
+    next_state = state + action + wind
 
     if not 0 <= next_state[0] < GRIDSIZE[0] or not 0 <= next_state[1] < GRIDSIZE[1]:
         # outside of grid, state stays same
+        if WIND[state[1]] != 0:
+            state = np.array([state[0], next_state[1]])  # Need to account for wind here, y stays same, x moves
         reward = -1.0
     elif np.array_equal(next_state, TERMINAL_STATE):
         state = next_state
@@ -103,4 +108,4 @@ if __name__ == "__main__":
     # Alternate between determining value function and improving policy until optimal
     for e in range(n_episodes):
         w.episode()
-    w.follow_policy()
+    w.follow_policy()  # Print optimal policy
