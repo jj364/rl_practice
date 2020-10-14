@@ -27,6 +27,7 @@ class Track:
         self.start = None
         self.finish = None
         self.bound = None
+        self.shape = None
 
     def create_track(self, structure='two_rectangles', n_rectangles=4):
         """
@@ -35,6 +36,7 @@ class Track:
         """
         if structure == 'two_rectangles':  # Create from 2 rectangle
             self.track = np.zeros((ROWS, COLS))  # 1 is on track, 0 is off
+            self.shape = (ROWS, COLS)
             # Create track from intersection of 2 rectangles
             r1 = [[0, ROWS], [0, W_RECT_1]]  # [x1, x2], [y1, y2]
             r2 = [[ROWS-H_RECT_2, ROWS], [0, COLS]]
@@ -42,11 +44,11 @@ class Track:
             self.track[r2[0][0]:r2[0][1], r2[1][0]:r2[1][1]] = 1
 
             # Generate start and finish coordinates
-            self.start = [[0, i] for i in np.where(self.track[0, :] == 1)[0]][1:-1]
+            self.start = [(0, i) for i in np.where(self.track[0, :] == 1)[0]][1:-1]
             self.finish = []
             for j in range(5):  # Need to extend finish beyond finish line as speed can be > 1
                 for i in np.where(self.track[:, COLS - 1] == 1)[0]:
-                    self.finish += [[i, COLS - 1 + j]]
+                    self.finish += [(i, COLS - 1 + j)]
 
         elif structure == 'random':
             if n_rectangles < 2:
@@ -74,13 +76,15 @@ class Track:
                     y += random.randint(int(dy*0.25), int(dy*0.75))
 
             self.track = np.zeros((y+dy, x+dx))
+            self.shape = self.track.shape
             for r in rectangles:
                 self.track[r[1][0]:r[1][1], r[0][0]:r[0][1]] = 1
-            self.start = [[0, i] for i in range(n_start)]
-            self.finish = []
-            for j in range(5):
-                for i in range(n_finish):
-                    self.finish += [[y+dy-i-1, x+dx+j-1]]
+            self.start = [(0, i) for i in range(n_start)]
+            self.finish = [(y + dy - i - 1, x + dx - 1) for i in range(n_finish)]
+            # self.finish = []
+            # for j in range(5):
+            #     for i in range(n_finish):
+            #         self.finish += [(y+dy-i-1, x+dx+j-1)]
 
 
 class Car:
@@ -95,20 +99,21 @@ class Car:
         self.reward = None
         self.target_policy = None
         self.behaviour_policy = None
-        self.Q = np.random.rand(ROWS, COLS, SPEEDS, SPEEDS, len(ACTIONS)) - 100  # Randomly initialise state-action
-        # values
-        self.C = np.zeros((ROWS, COLS, SPEEDS, SPEEDS, len(ACTIONS)))  # Weight sum
+        # Randomly initialise state-action values
+        self.Q = np.random.rand(track.shape[0], track.shape[1], SPEEDS, SPEEDS, len(ACTIONS)) - 100
+        self.C = np.zeros((track.shape[0], track.shape[1], SPEEDS, SPEEDS, len(ACTIONS)))  # Weight sum
         self.e = 0.1  # Epsilon for soft behaviour policy
         self.gamma = 0.99  # Discount factor
         self.track = track
+        self.greedy_action = None
 
     def create_target_policy(self):
         """
         Create greedy policy for target depending on state
         """
-        self.target_policy = np.zeros((ROWS, COLS, SPEEDS, SPEEDS), dtype=int)
-        for r in range(ROWS):
-            for c in range(COLS):
+        self.target_policy = np.zeros((self.track.shape[0], self.track.shape[1], SPEEDS, SPEEDS), dtype=int)
+        for r in range(self.track.shape[0]):
+            for c in range(self.track.shape[1]):
                 if self.track.track[r, c]:
                     for i in range(SPEEDS):
                         for j in range(SPEEDS):
@@ -171,14 +176,30 @@ class Car:
         """
         self.vy += ACTIONS[self.action][0]
         self.vx += ACTIONS[self.action][1]
+
+        # generate small trajectory to prevent corner cutting - probably a better way of doing this!
+        t = []
+        if self.vy >= self.vx:
+            for dy in range(1, self.vy+1):
+                y = self.coord[0] + dy
+                x = self.coord[1] + round(dy*self.vx/self.vy)
+                t.append((y, x))
+        else:
+            for dx in range(1, self.vx+1):
+                x = self.coord[1] + dx
+                y = self.coord[0] + round(dx*self.vy/self.vx)
+                t.append((y, x))
+
         self.coord[0] += self.vy
         self.coord[1] += self.vx
 
-        if self.coord in self.track.finish:
+        # if self.coord in self.track.finish:
+        if len(set(t) & set(self.track.finish)) != 0:
             outcome = 'Finish'
-            self.reward = -1  # Episode complete
-        elif not (0 <= self.coord[0] < ROWS) or not (0 <= self.coord[1] < COLS) or \
-                self.track.track[self.coord[0], self.coord[1]] != 1:
+            self.reward = - 1  # Episode complete
+        elif not (0 <= self.coord[0] < self.track.shape[0]) or not (0 <= self.coord[1] < self.track.shape[1]) or \
+                len([i for i in t if self.track.track[i[0], i[1]] != 1]) != 0:  # self.track.track[self.coord[0],
+            # self.coord[1]] != 1:
             # on or through boundary
             outcome = 'Collision'
             self.reward = -50  # Big penalty for hitting boundary
@@ -246,19 +267,16 @@ class Car:
 t = Track()
 t.create_track(structure='random', n_rectangles=5)
 show_track(t.track, t.start, t.finish)
-quit()
+
 
 # Create car object and initialise target policy
 c = Car(t)
 c.create_target_policy()
 for ep in tqdm(range(50000)):  # Train for 50k episodes
 
-    if ep % 10000 == 0 and ep != 0:  # Visualise policy every 10k
+    if ep % 5000 == 0 and ep != 0:  # Visualise policy every 10k
         for i in range(len(c.track.start)):
-            print('--------------------------------------------------------')
             trajectory = c.generate_episode(evaluate=True, specify_start=i)
-            print(len(trajectory), trajectory[-5:])
-            t.create_track()  # Clean previous paths
             show_track(t.track, t.start, t.finish, trajectory)
     else:  # Generate episode as normal with e-greedy behaviour policy
         trajectory = c.generate_episode()
@@ -267,8 +285,6 @@ for ep in tqdm(range(50000)):  # Train for 50k episodes
 # Once done let's observe final policy
 for i in range(len(c.track.start)):
     trajectory = c.generate_episode(evaluate=True, specify_start=i)
-    print(len(trajectory), trajectory)
-    t.create_track()  # Clean previous paths
     show_track(t.track, t.start, t.finish, trajectory)
 
 

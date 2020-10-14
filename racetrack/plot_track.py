@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
-from matplotlib import colors
+from matplotlib import colors, patches
 
 
-def show_track(track, start, finish, trajectory=None):
-
+def show_track(t, start, finish, trajectory=None):
+    track = t.copy()
+    print(start)
+    print(finish)
     for s in start:
         track[s[0], s[1]] = 2
 
@@ -14,16 +16,36 @@ def show_track(track, start, finish, trajectory=None):
     if trajectory is not None:
         for t in trajectory[::-1]:
             track[t[0][0], t[0][1]] = 4
-            if [t[0][0], t[0][1]] in start:
-                break
-        # track[trajectory[-1][0][0], 9] = 4
+
+        print(trajectory[-1])
+        [vy, vx] = trajectory[-1][0][2:4]
+        [y, x] = trajectory[-1][0][0:2]
+        print(x,y, vx, vy)
+        if vy >= vx:
+            for dy in range(1, vy+1):
+                ty = y + dy
+                tx = x + round(dy*vx/vy)
+                if (ty, tx) in finish:
+                    break
+        else:
+            for dx in range(1, vx+1):
+                tx = x + dx
+                ty = x + round(dx*vy/vx)
+                if (ty, tx) in finish:
+                    break
+        print(tx,ty)
+        track[ty, tx] = 4
 
     # create discrete colormap
     cmap = colors.ListedColormap(['red', 'blue', 'green', 'purple', 'yellow'])
+    labels = ['Off Track', 'Track', 'Start', 'Finish', 'Path']
     bounds = [0, 1, 2, 3, 4, 5]
     norm = colors.BoundaryNorm(bounds, cmap.N)
 
     fig, ax = plt.subplots()
     ax.imshow(track, cmap=cmap, norm=norm)
-
+    handles = []
+    for c in cmap.colors:
+        handles.append(patches.Patch(color=c))
+    ax.legend(handles=handles, labels=labels)
     plt.show()
