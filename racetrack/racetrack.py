@@ -1,6 +1,7 @@
 import numpy as np
 import random
-import math
+import time
+from numba import jit
 from tqdm import tqdm
 
 from plot_track import show_track
@@ -206,6 +207,7 @@ class Car:
             else:  # Update importance ratio
                 W /= (1 - self.e + self.e/9)
 
+    @jit(nopython=True)
     def generate_episode(self, evaluate=False, specify_start=None):
         self.start_car(specify_start)  # Initialise car variables at start of episode
         ep_trajectory = []
@@ -234,7 +236,8 @@ show_track(t.track, t.start, t.finish)  # Show initial track
 # Create car object and initialise target policy
 c = Car(t)
 c.create_target_policy()
-for ep in tqdm(range(50000)):  # Train for 50k episodes
+t0 = time.time()
+for ep in tqdm(range(10000)):  # Train for 50k episodes
 
     if ep % 30000 == 0 and ep != 0:  # Visualise policy every so often
         print('\n###########################################')
@@ -247,6 +250,8 @@ for ep in tqdm(range(50000)):  # Train for 50k episodes
     else:  # Generate episode as normal with e-greedy behaviour policy
         trajectory = c.generate_episode()
         c.update_vals(trajectory)     # Update policy
+
+print(f'Optimisation time = {time.time()-t0} s')
 
 # Once done let's observe final policy
 print('\n###########################################')
