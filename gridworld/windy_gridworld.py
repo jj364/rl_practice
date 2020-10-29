@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 
 import numpy as np
-from collections import OrderedDict
-
-# from numpy.core._multiarray_umath import ndarray
+from plot import plot_world
 
 GRIDSIZE = [7, 10]
 START_STATE = np.array([3, 0])  # Start point
@@ -58,6 +56,7 @@ class World:
         self.is_opt = False
         self.state = None
         self.alpha = alpha
+        self.trajectory = None
 
         if actions.lower() == 'reg':
             self.actions = ACTIONS_REG
@@ -78,16 +77,22 @@ class World:
 
         self.Q[TERMINAL_STATE[0], TERMINAL_STATE[1], :] = 0  # Zero for terminal state
 
-    def follow_policy(self):
+    def follow_policy(self, plot=True):
         """
         Follow the optimised policy to reach the terminal state and print each step
         """
         self.reset_episode()
+        self.trajectory = []
         while not np.array_equal(self.state, TERMINAL_STATE):
             a0 = self.select_action()
             print(f"State: {self.state} Action: {self.actions[a0]}")
             self.state, _ = step(self.state, np.array(self.actions[a0]))
+            self.trajectory.append(list(self.state))
         print("Terminal State Reached")
+
+        if plot:
+            plot_world(np.ones(GRIDSIZE), START_STATE, TERMINAL_STATE, WIND, self.trajectory[:-1])
+
 
     def reset_episode(self):
         self.state = START_STATE
@@ -121,7 +126,7 @@ class World:
 
 
 if __name__ == "__main__":
-    w = World(actions='King')
+    w = World(actions='reg')
     w.create_world()
     n_episodes = 1000
 
