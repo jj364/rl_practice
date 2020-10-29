@@ -1,3 +1,4 @@
 # Ignore env and intellij folders
 geo_env/
+snake/
 .idea/
