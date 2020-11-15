@@ -17,7 +17,7 @@ Contains two examples of learning using the *gridworld* environment. Agent is on
 
 In the *vanilla* gridworld Generalised Policy Iteration (GPI) is used to find the optimal path from start to finish. The entire state-action space is sampled for the grid.
 
-In *windy* gridworld a Southerly wind pushes the agent up the grid to add complexity to the environment. Temporal difference learning is used to find the optimal path from start to finish. 
+In *windy* gridworld a Southerly wind pushes the agent up the grid to add complexity to the environment. Temporal difference learning (SARSA) is used to find the optimal path from start to finish. 
 
 ## Racetrack - Off-policy Monte Carlo
 Off-policy Monte Carlo control is used to teach a car to make a turn on a racetrack with restrictions on maximum speed.
