@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+import time
 import numpy as np
 from plot import plot_world
 
@@ -47,12 +47,13 @@ class World:
     Rewards of -1 are given for each movement except if you reach terminal state where reward is 0
     """
 
-    def __init__(self, probability=0.25, gamma=1.0, alpha=0.5, actions='reg'):
+    def __init__(self, probability=0.25, gamma=1.0, alpha=0.5, epsilon=0.1, actions='reg'):
         self.Q = None
         self.V = None
         self.grid = None
         self.gamma = gamma  # Discount
         self.probability = probability  # initial
+        self.epsilon = epsilon  # e greedy policy
         self.is_opt = False
         self.state = None
         self.alpha = alpha
@@ -84,7 +85,7 @@ class World:
         self.reset_episode()
         self.trajectory = []
         while not np.array_equal(self.state, TERMINAL_STATE):
-            a0 = self.select_action()
+            a0 = self.select_action(test=True)
             print(f"State: {self.state} Action: {self.actions[a0]}")
             self.state, _ = step(self.state, np.array(self.actions[a0]))
             self.trajectory.append(list(self.state))
@@ -93,21 +94,29 @@ class World:
         if plot:
             plot_world(np.ones(GRIDSIZE), START_STATE, TERMINAL_STATE, WIND, self.trajectory[:-1])
 
-
     def reset_episode(self):
         self.state = START_STATE
 
-    def select_action(self, s=None):
+    def select_action(self, s=None, test=False):
         """
         Choose action from Q function - randomly so if multiple actions are considered equally good
-        :param s: optional state parameter - used for performing one-step lookahead
-        :return: action number
+        :param s: optional state parameter - used for performing lookahead
+        :param test: bool parameter to choose policy when testing/training
+        :return: action number (index in list of possible actions)
         """
         if s is not None:
             [y, x] = s
         else:
             [y, x] = self.state
-        return np.random.choice(np.flatnonzero(self.Q[y, x, :] == self.Q[y, x, :].max()))
+
+        if test:
+            greedy = 1.0  # When testing follow policy, not e-greedy.
+        else:
+            greedy = np.random.rand()
+        if greedy > self.epsilon:
+            return np.random.choice(np.flatnonzero(self.Q[y, x, :] == self.Q[y, x, :].max()))
+        else:
+            return np.random.randint(0, len(self.actions))
 
     def episode(self):
         """
@@ -124,13 +133,62 @@ class World:
                                                                     - self.Q[self.state[0], self.state[1], a0])
             self.state = s1  # Update state
 
+    def episode_nsarsa(self, n):
+        n = n
+        self.reset_episode()
+        a = [self.select_action()]  # Action t0
+        s = [self.state]  # State t0
+        r = [0]  # All rewards added are t+1 so need to start with nonzero array
+        T = np.iinfo(np.int64).max  # large number
+        t = 0  # Time counter
+        while not np.array_equal(self.state, TERMINAL_STATE):  # N step sarsa
+            if t < T:
+
+                # Calculate and store next state and reward from action
+                si, ri = step(self.state, np.array(self.actions[a[-1]]))
+                self.state = si
+                s.append(si)
+                r.append(ri)
+
+                # Store action if not terminal
+                if np.array_equal(self.state, TERMINAL_STATE):
+                    T = t + 1
+                else:
+                    a.append(self.select_action(s[-1]))
+
+            tau = t - n + 1  # Counter to track whether n-step lookahead has occurred
+            # Once n step sarsa has been done we need to update weights
+            if tau >= 0:
+                i = tau + 1
+                j = min(tau + n, T) + 1  # Plus 1 to allow for inclusive range below
+                g = sum([self.gamma**(ind-tau-1)*r[ind] for ind in range(i, j)])
+
+                if tau + n < T:
+                    g += self.gamma**n * self.Q[s[tau+n][0], s[tau+n][1], a[tau+n]]
+
+                self.Q[s[tau][0], s[tau][1], a[tau]] += self.alpha*(g - self.Q[s[tau][0], s[tau][1], a[tau]])
+
+            t += 1  # Update time
+
 
 if __name__ == "__main__":
-    w = World(actions='reg')
+    w = World(actions='reg', gamma=0.99)
     w.create_world()
-    n_episodes = 1000
+    n_episodes = 10000
 
-    # Alternate between determining value function and improving policy until optimal
+    # Time n-step sarsa
+    t0 = time.time()
+    for e in range(n_episodes):
+        w.episode_nsarsa(5)
+    t1 = time.time()-t0
+    w.follow_policy()  # Print optimal policy
+
+    w.create_world()  # Must reset state-action function
+    # Time one-step sarsa
+    t2 = time.time()
     for e in range(n_episodes):
         w.episode()
+    t3 = time.time() - t2
     w.follow_policy()  # Print optimal policy
+
+    print(f'N-step Sarsa: {t1:.2f}s  One-step sarsa: {t3:.2f}s')
