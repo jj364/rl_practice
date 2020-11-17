@@ -19,6 +19,8 @@ In the *vanilla* gridworld Generalised Policy Iteration (GPI) is used to find th
 
 In *windy* gridworld a Southerly wind pushes the agent up the grid to add complexity to the environment. Temporal difference learning (SARSA) is used to find the optimal path from start to finish. 
 
+Further to this, n-step SARSA is added so that the effect of multiple steps is considered when taking a single action.
+
 ## Racetrack - Off-policy Monte Carlo
 Off-policy Monte Carlo control is used to teach a car to make a turn on a racetrack with restrictions on maximum speed.
 
