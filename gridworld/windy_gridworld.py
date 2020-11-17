@@ -1,4 +1,11 @@
 #! /usr/bin/env python
+
+#############################################
+################ ISSUES #####################
+# Seems to quite often not find optimal policy and occasionally gets stuck in a loop if you try to follow the policy
+# greedily and the optimal policy has yet to be found
+#############################################
+
 import time
 import numpy as np
 from plot import plot_world
@@ -198,12 +205,7 @@ if __name__ == "__main__":
     t2 = time.time()
     for e in range(n_episodes):
         w.episode()
-        if e%1000 == 0 and e != 0:
-            print('-----------------------')
-            for y in range(GRIDSIZE[0]):
-                for x in range(GRIDSIZE[1]):
-                    print(f'[{y},{x}] =', w.Q[y, x])
-    # t3 = time.time() - t2
+    t3 = time.time() - t2
 
     w.follow_policy()  # Print optimal policy
 
