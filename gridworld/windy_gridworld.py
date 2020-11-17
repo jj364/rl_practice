@@ -33,7 +33,7 @@ def step(state, action):
         reward = -1.0
     elif np.array_equal(next_state, TERMINAL_STATE):
         state = next_state  # Terminal state, reward 0
-        reward = 0.0
+        reward = 1.0
     else:
         reward = -1.0
         state = next_state
@@ -72,11 +72,12 @@ class World:
         :param policy: optional parameter to set initial policy. Not yet implemented
         """
         self.grid = np.reshape(np.array(range(GRIDSIZE[0] * GRIDSIZE[1])), (GRIDSIZE[0], GRIDSIZE[1]))
-        self.Q = np.ndarray((GRIDSIZE[0], GRIDSIZE[1], len(self.actions)))  # Create policy for each option a
-        if policy == 'uniform':
-            self.Q.fill(self.probability)
+        # self.Q = np.ndarray((GRIDSIZE[0], GRIDSIZE[1], len(self.actions)))  # Create policy for each option a
+        # if policy == 'uniform':
+        #     self.Q.fill(self.probability)
 
-        self.Q[TERMINAL_STATE[0], TERMINAL_STATE[1], :] = 0  # Zero for terminal state
+        # self.Q[TERMINAL_STATE[0], TERMINAL_STATE[1], :] = 0  # Zero for terminal state
+        self.Q = np.zeros((GRIDSIZE[0], GRIDSIZE[1], len(self.actions)))
 
     def follow_policy(self, plot=True):
         """
@@ -123,17 +124,24 @@ class World:
         Run episode from start to Terminal state and update Q function as you go
         """
         self.reset_episode()
-
+        a0 = self.select_action()  # Choose greedy action from current state
         while not np.array_equal(self.state, TERMINAL_STATE):  # Apply TD learning with one step lookahead
-            a0 = self.select_action()  # Choose greedy action from current state
+
             s1, r1 = step(self.state, np.array(self.actions[a0]))  # Calculate new state and reward
             a1 = self.select_action(s1)  # Choose greedy action for next state (one step lookahead)
+
             # Update Q for current state using reward from current action and discounted Q value from next state
             self.Q[self.state[0], self.state[1], a0] += self.alpha*(r1 + self.gamma*self.Q[s1[0], s1[1], a1]
                                                                     - self.Q[self.state[0], self.state[1], a0])
+
             self.state = s1  # Update state
+            a0 = a1
 
     def episode_nsarsa(self, n):
+        """
+        Implementing n step sarsa on policy control
+        :param n: number of timesteps to lookahead
+        """
         n = n
         self.reset_episode()
         a = [self.select_action()]  # Action t0
@@ -141,7 +149,8 @@ class World:
         r = [0]  # All rewards added are t+1 so need to start with nonzero array
         T = np.iinfo(np.int64).max  # large number
         t = 0  # Time counter
-        while not np.array_equal(self.state, TERMINAL_STATE):  # N step sarsa
+        tau = 0
+        while not tau == T - 1:  # N step sarsa
             if t < T:
 
                 # Calculate and store next state and reward from action
@@ -172,23 +181,30 @@ class World:
 
 
 if __name__ == "__main__":
-    w = World(actions='reg', gamma=0.99)
+    w = World(actions='reg', alpha=0.5)
     w.create_world()
-    n_episodes = 10000
+    n_episodes = 2000
 
     # Time n-step sarsa
     t0 = time.time()
     for e in range(n_episodes):
-        w.episode_nsarsa(5)
+        w.episode_nsarsa(10)
     t1 = time.time()-t0
     w.follow_policy()  # Print optimal policy
 
+    w = World(actions='reg', gamma=1.0, alpha=0.5, epsilon=0.1)
     w.create_world()  # Must reset state-action function
-    # Time one-step sarsa
+    # # Time one-step sarsa
     t2 = time.time()
     for e in range(n_episodes):
         w.episode()
-    t3 = time.time() - t2
+        if e%1000 == 0 and e != 0:
+            print('-----------------------')
+            for y in range(GRIDSIZE[0]):
+                for x in range(GRIDSIZE[1]):
+                    print(f'[{y},{x}] =', w.Q[y, x])
+    # t3 = time.time() - t2
+
     w.follow_policy()  # Print optimal policy
 
     print(f'N-step Sarsa: {t1:.2f}s  One-step sarsa: {t3:.2f}s')
