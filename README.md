@@ -25,3 +25,10 @@ Further to this, n-step SARSA is added so that the effect of multiple steps is c
 Off-policy Monte Carlo control is used to teach a car to make a turn on a racetrack with restrictions on maximum speed.
 
 A racetrack is randomly generated and the car learns the optimal policy over several thousand episodes. The state-action space is too large to sample it all so Monte Carlo sampling is needed.
+
+## Tabular Planning
+Testing dyna-q learning where a model of the environment is used to refine the state-action function as well as taking data from experience
+
+We can change the number of planning steps per environment action steps to achieve optimality quicker.
+
+The file dynaq_maze tests 3 different planning steps including zero planning (which is direct reinforcement learning) and plots the results to see which converges on optimality fastest.
