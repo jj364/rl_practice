@@ -149,7 +149,6 @@ class World:
         Implementing n step sarsa on policy control
         :param n: number of timesteps to lookahead
         """
-        n = n
         self.reset_episode()
         a = [self.select_action()]  # Action t0
         s = [self.state]  # State t0
